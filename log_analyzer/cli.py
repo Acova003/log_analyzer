@@ -39,7 +39,7 @@ def analyze(inputs, output, mfip, lfip, eps, bytes):
         df = pd.concat(df_list)
 
          # Log to see if the data is correct
-        #logging.debug("\n" + df.head().to_string(index=False))  # Log only the first few rows to avoid clutter
+        logging.debug("\n" + df.head().to_string(index=False))  # Log only the first few rows to avoid clutter
 
         results = {}
 
@@ -54,6 +54,14 @@ def analyze(inputs, output, mfip, lfip, eps, bytes):
                 least_freq_ip = ip_counts.idxmin()
                 results['least_frequent_ip'] = least_freq_ip
                 logging.debug(f"Least frequent IP: {least_freq_ip}")
+
+        # Average of events per second
+        if eps:
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
+            df['timestamp'] = df['timestamp'].dt.floor('s')
+            eps = df.groupby('timestamp').size().mean()
+            results['events_per_second'] = eps
+            logging.debug(f"Events per second: {eps}")
                     
         # Write the results to the output file
         with open(output, 'w') as f:
