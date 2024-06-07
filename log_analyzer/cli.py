@@ -1,6 +1,7 @@
 import click
 import pandas as pd
 import logging
+import json
 
 # Configure logging for debugging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -38,7 +39,27 @@ def analyze(inputs, output, mfip, lfip, eps, bytes):
         df = pd.concat(df_list)
 
          # Log to see if the data is correct
-        logging.debug("\n" + df.head().to_string(index=False))  # Log only the first few rows to avoid clutter
+        #logging.debug("\n" + df.head().to_string(index=False))  # Log only the first few rows to avoid clutter
+
+        results = {}
+
+        if mfip or lfip:
+            ip_counts = df['client_ip'].value_counts()
+            if mfip:
+                most_freq_ip = ip_counts.idxmax()
+                results['most_frequent_ip'] = most_freq_ip
+                logging.debug(f"Most frequent IP: {most_freq_ip}")
+            
+            if lfip:
+                least_freq_ip = ip_counts.idxmin()
+                results['least_frequent_ip'] = least_freq_ip
+                logging.debug(f"Least frequent IP: {least_freq_ip}")
+                    
+        # Write the results to the output file
+        with open(output, 'w') as f:
+            json.dump(results, f, indent=4)
+
+        click.echo(f"Output written to {output}")
 
 
     except Exception as e:
