@@ -1,8 +1,14 @@
 import click
+import pandas as pd
+import logging
 
-click.command()
+# Configure logging for debugging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+@click.command()
 @click.option('--input', 'inputs', type=click.Path(exists=True), multiple=True, required=True, help='Path to input file(s)')
-@click.argument('output', type=click.Path()) # Positional argument for output file
+@click.argument('output', type=click.Path())  # Positional argument for output file
 @click.option('--mfip', is_flag=True, help='Most frequent IP')
 @click.option('--lfip', is_flag=True, help='Least frequent IP')
 @click.option('--eps', is_flag=True, help='Events per second')
@@ -20,14 +26,23 @@ def analyze(inputs, output, mfip, lfip, eps, bytes):
         --eps: events per second
         --bytes: total amount of bytes exchanged
     """
-
     try:
-        pass
-        # Read the data into a dataframe with pandas?
-    
-    #Exceptions that we should catch
-    except:
-        pass
+        df_list = []
+        for file in inputs:
+            df = pd.read_csv(file, sep=r'\s+', header=None, names=[
+                'timestamp', 'response_header_size', 'client_ip', 'http_response_code',
+                'response_size', 'http_request_method', 'url', 'username',
+                'type_of_access', 'response_type'
+            ])
+            df_list.append(df)
+        df = pd.concat(df_list)
+
+         # Log to see if the data is correct
+        logging.debug("\n" + df.head().to_string(index=False))  # Log only the first few rows to avoid clutter
+
+
+    except Exception as e:
+        click.echo(f"An error occurred: {e}")
 
 if __name__ == '__main__':
     analyze()
