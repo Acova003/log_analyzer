@@ -49,7 +49,7 @@ This is a command-line tool to analyze the content of log files. The tool accept
 1. **Clone the Repository**:
 
     ```sh
-    git clone https://github.com/yourusername/log_analyzer.git
+    git clone https://github.com/Acova003/log_analyzer.git
     cd log_analyzer
     ```
 
