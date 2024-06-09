@@ -6,14 +6,13 @@ import json
 # Configure logging for debugging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 @click.command()
 @click.option('--input', 'inputs', type=click.Path(exists=True), multiple=True, required=True, help='Path to input file(s)')
 @click.argument('output', type=click.Path())  # Positional argument for output file
 @click.option('--mfip', is_flag=True, help='Most frequent IP')
 @click.option('--lfip', is_flag=True, help='Least frequent IP')
 @click.option('--eps', is_flag=True, help='Events per second')
-@click.option('--bytes', is_flag=True, help='Total amount of bytes exchanged')
+@click.option('--bytes', is_flag=True, help='Total amount of bytes exchanged')  
 def analyze(inputs, output, mfip, lfip, eps, bytes):
     """
     Analyze log files and perform the following operations in options
@@ -43,6 +42,9 @@ def analyze(inputs, output, mfip, lfip, eps, bytes):
 
         results = {}
 
+        # Calculate most and least frequent IP
+        # mfip = most frequent IP
+        # lfip = least frequent IP
         if mfip or lfip:
             ip_counts = df['client_ip'].value_counts()
             if mfip:
@@ -55,13 +57,19 @@ def analyze(inputs, output, mfip, lfip, eps, bytes):
                 results['least_frequent_ip'] = least_freq_ip
                 logging.debug(f"Least frequent IP: {least_freq_ip}")
 
-        # Average of events per second
+        # Calculate average of events per second
         if eps:
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
             df['timestamp'] = df['timestamp'].dt.floor('s')
             eps = df.groupby('timestamp').size().mean()
             results['events_per_second'] = eps
             logging.debug(f"Events per second: {eps}")
+
+        # Calculate total amount of bytes exchanged
+        if bytes:
+            total_bytes = df['response_size'].sum()
+            results['total_bytes'] = int(total_bytes)
+            logging.debug(f"Total bytes exchanged: {total_bytes}")
                     
         # Write the results to the output file
         with open(output, 'w') as f:
