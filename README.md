@@ -46,17 +46,26 @@ This is a command-line tool to analyze the content of log files. The tool accept
 
 ### Running with Docker
 
-1. **Build the Docker Image**:
+1. **Clone the Repository**:
+
+    ```sh
+    git clone https://github.com/yourusername/log_analyzer.git
+    cd log_analyzer
+    ```
+
+2. **Build the Docker Image**:
 
     ```sh
     docker build -t log_analyzer .
     ```
 
-2. **Run the Docker Container**:
+3. **Run the Docker Container**:
 
     ```sh
-    docker run --rm -v path/to/local/directory:/data log_analyzer --input /data/access.log /data/output.json <OPTIONS: --mfip --lfip --eps --bytes>
+    docker run --rm -v path/to/local/directory:/data log_analyzer --input /data/access.log /data/output.json --mfip --lfip --eps --bytes
     ```
+
+    The output file `output.json` will be created in the `path/to/local/directory` on your host machine.
 
 ## Usage
 
