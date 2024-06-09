@@ -138,8 +138,22 @@ python log_analyzer/cli.py --input path/to/access.log path/to/output.json --mfip
 ```sh
 docker run --rm -v path/to/local/directory:/data log_analyzer --input /data/access.log /data/output.json --eps
 ```
+## Data Input 
+#### The data is in CSV format with 10 fields. After the second field they are separated by a space:
 
+```sh
+1157689324.156 1372 10.105.21.199 TCP_MISS/200 399 GET http://www[.]google-
+analytics[.]com/__utm.gif? badeyek DIRECT/66.102.9.147 image/gif
+```
 
-
-
-
+#### which, after proper parsing should be split as follow:
+- Field 1: 1157689324.156 [Timestamp in seconds since the epoch]
+- Field 2: 1372 [Response header size in bytes]
+- Field 3: 10.105.21.199 [Client IP address]
+- Field 4: TCP_MISS/200 [HTTP response code]
+- Field 5: 399 [Response size in bytes]
+- Field 6: GET [HTTP request method]
+- Field 7: http://www.google-analytics.com/__utm.gif? [URL]
+- Field 8: badeyek [Username]
+- Field 9: DIRECT/66.102.9.147 [Type of access/destination IP address]
+- Field 10: image/gif [Response type]
