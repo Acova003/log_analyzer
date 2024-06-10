@@ -110,6 +110,9 @@ def analyze(inputs, output, mfip, lfip, eps, bytes):
 
         results = {}
 
+        # Most and least frequent IP addresses
+        # mfip = most frequent IP
+        # lfip = least frequent IP
         if mfip or lfip:
             ip_counts = df['client_ip'].value_counts()
             if mfip:
@@ -130,6 +133,7 @@ def analyze(inputs, output, mfip, lfip, eps, bytes):
             results['events_per_second'] = float(eps)  
             logging.debug(f"Events per second: {eps}")
 
+        # Total amount of bytes exchanged
         if bytes:
             total_bytes = df['response_size'].sum()
             results['total_bytes'] = int(total_bytes)  
