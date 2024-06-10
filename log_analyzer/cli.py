@@ -3,6 +3,7 @@ import pandas as pd
 import logging
 import json
 import numpy as np
+import io
 
 # Configure logging for debugging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -36,6 +37,18 @@ class NpEncoder(json.JSONEncoder):
             return obj.tolist()
         return super(NpEncoder, self).default(obj)
 
+def preprocess_line(line):
+    fields = line.split()
+    # Check if the line has more fields than expected
+    if len(fields) > 10:
+        logging.error(f"Bad line with extra fields: {line.strip()}")
+        click.echo(f"Skipping bad line: {line.strip()}")
+        return None
+    return line
+
+def handle_bad_lines(bad_line):
+    logging.error(f"Skipping bad line: {bad_line}")
+
 @click.command()
 @click.option('--input', 'inputs', type=click.Path(exists=True), multiple=True, required=True, help='Path to input file(s)')
 @click.argument('output', type=click.Path())  # Positional argument for output file
@@ -59,27 +72,44 @@ def analyze(inputs, output, mfip, lfip, eps, bytes):
     try:
         df_list = []
         for file in inputs:
-            # Print the first few lines of the file for debugging
-            with open(file, 'r') as f:
-                for _ in range(5):
-                    print(f.readline())
-
-            df = pd.read_csv(file, sep=r'\s+', header=None, names=[
-                'timestamp', 'response_header_size', 'client_ip', 'http_response_code',
-                'response_size', 'http_request_method', 'url', 'username',
-                'type_of_access', 'response_type'
-            ], on_bad_lines='skip')
-            df_list.append(df)
+            logging.debug(f"Reading file: {file}")
+            try:
+                with open(file, 'r') as f:
+                    lines = f.readlines()
+                
+                valid_lines = []
+                for line in lines:
+                    processed_line = preprocess_line(line)
+                    if processed_line:
+                        valid_lines.append(processed_line)
+                
+                if not valid_lines:
+                    logging.error(f"No valid lines in file: {file}")
+                    continue
+                
+                df = pd.read_csv(io.StringIO('\n'.join(valid_lines)), sep=r'\s+', header=None, names=[
+                    'timestamp', 'response_header_size', 'client_ip', 'http_response_code',
+                    'response_size', 'http_request_method', 'url', 'username',
+                    'type_of_access', 'response_type'
+                ], on_bad_lines=handle_bad_lines, engine='python')
+                df_list.append(df)
+            except pd.errors.ParserError as e:
+                logging.error(f"Error parsing file {file}: {e}")
+            except Exception as e:
+                logging.error(f"Unexpected error reading file {file}: {e}")
+        
+        if not df_list:
+            click.echo("No valid data to process.")
+            return
+        
         df = pd.concat(df_list)
+        logging.debug("Data concatenation complete.")
 
         # Log to see if the data is correct
         logging.debug("\n" + df.head().to_string(index=False))  # Log only the first few rows to avoid clutter
 
         results = {}
 
-        # Calculate most and least frequent IP
-        # mfip = most frequent IP
-        # lfip = least frequent IP
         if mfip or lfip:
             ip_counts = df['client_ip'].value_counts()
             if mfip:
@@ -92,7 +122,7 @@ def analyze(inputs, output, mfip, lfip, eps, bytes):
                 results['least_frequent_ip'] = least_freq_ip
                 logging.debug(f"Least frequent IP: {least_freq_ip}")
 
-        # Calculate average of events per second
+        # Average of events per second
         if eps:
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
             df['timestamp'] = df['timestamp'].dt.floor('s')
@@ -100,7 +130,6 @@ def analyze(inputs, output, mfip, lfip, eps, bytes):
             results['events_per_second'] = float(eps)  
             logging.debug(f"Events per second: {eps}")
 
-        # Calculate total amount of bytes exchanged
         if bytes:
             total_bytes = df['response_size'].sum()
             results['total_bytes'] = int(total_bytes)  
